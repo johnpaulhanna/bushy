@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pyo
+build/
+dist/
+*.spec.bak
+tracker_data.json
+.venv/
+*.egg-info/
+.claude/
+ClickTracker.spec
