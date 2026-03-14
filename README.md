@@ -1,27 +1,22 @@
 # Bushy
 
-<!-- Screenshot or GIF here -->
-<!-- ![Bushy](screenshot.png) -->
+![alt text](image.png)
+- this is bushy
 
 ## What is it?
 
-<!-- Brief 1-2 sentence description of what the app does -->
+- bushy is a cool bush that runs in the background and tracks how many times youve clicked or typed something, it grows the more you do either
 
 ## Features
 
-- <!-- Feature 1 -->
-- <!-- Feature 2 -->
-- <!-- Feature 3 -->
-- <!-- Feature 4 -->
+- grows the more you type or click
+- has flowers on it the more you click
+- grows in size the more you type
+- clicking on it shows the total count for each type (clicks | keys)
 
 ## Download
 
-<!-- Link to latest release -->
 [Download the latest release](https://github.com/johnpaulhanna/bushy/releases/latest)
-
-## How it works
-
-<!-- Explain the bush growth stages, flower stages, what clicks/keys do -->
 
 ## Building from source
 
@@ -34,4 +29,4 @@ The built `.exe` will be in `dist/ClickTracker.exe`.
 
 ## License
 
-<!-- Choose a license -->
+[MIT](LICENSE)
