@@ -29,14 +29,16 @@ DATA_FILE = os.path.join(DATA_DIR, "tracker_data.json")
 SETTINGS_FILE = os.path.join(DATA_DIR, "settings.json")
 LOG_FILE = os.path.join(DATA_DIR, "clicktracker.log")
 
-# Migrate old data file sitting next to the script/exe
-_old_data = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "tracker_data.json")
-if os.path.exists(_old_data) and not os.path.exists(DATA_FILE):
-    try:
-        import shutil
-        shutil.move(_old_data, DATA_FILE)
-    except Exception:
-        pass
+# Migrate old data file sitting next to the exe (not from PyInstaller temp dir)
+_exe_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+if not hasattr(sys, '_MEIPASS') or _exe_dir != sys._MEIPASS:
+    _old_data = os.path.join(_exe_dir, "tracker_data.json")
+    if os.path.exists(_old_data) and not os.path.exists(DATA_FILE):
+        try:
+            import shutil
+            shutil.move(_old_data, DATA_FILE)
+        except Exception:
+            pass
 
 # ---------------------------------------------------------------------------
 # Logging
