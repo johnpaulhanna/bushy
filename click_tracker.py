@@ -462,6 +462,22 @@ class ClickTracker:
         sprite = self.sprites.create_flowered_sprite(bush_stage, flower_stage)
         self._current_sprite_ref = sprite
         self.bush_label.config(image=sprite)
+        self.root.update_idletasks()
+        self._clamp_to_screen()
+
+    def _clamp_to_screen(self):
+        x = self.root.winfo_x()
+        y = self.root.winfo_y()
+        w = self.root.winfo_width()
+        h = self.root.winfo_height()
+        sw = self.root.winfo_screenwidth()
+        sh = self.root.winfo_screenheight()
+        nx = max(0, min(x, sw - w))
+        ny = max(0, min(y, sh - h))
+        if nx != x or ny != y:
+            self.root.geometry(f"+{nx}+{ny}")
+            self.settings["window_x"] = nx
+            self.settings["window_y"] = ny
 
     def _on_drag_start(self, event):
         self._drag_x = event.x
