@@ -362,7 +362,8 @@ class ClickTracker:
         self.running = True
         self._drag_x = 0
         self._drag_y = 0
-        self._pending_update = False
+        self._last_mc = self.mouse_clicks
+        self._last_kp = self.key_presses
         self._animating = False
         self._current_sprite_ref = None
         self._tray_icon = None
@@ -433,7 +434,7 @@ class ClickTracker:
         self.menu.add_separator()
         self.menu.add_command(label="Quit", command=self._quit)
 
-        self.root.bind("<<InputEvent>>", self._on_input_event)
+        self._poll_updates()
 
         self._render_bush(self._visual_bush_stage, self._visual_flower_stage)
         self.root.protocol("WM_DELETE_WINDOW", self._quit)
@@ -589,24 +590,32 @@ class ClickTracker:
     def _on_right_click(self, event):
         self.menu.tk_popup(event.x_root, event.y_root)
 
-    def _on_input_event(self, event=None):
-        self._pending_update = False
-        new_bush = get_bush_stage(self.key_presses)
-        new_flower = get_flower_stage(self.mouse_clicks)
+    def _poll_updates(self):
+        if not self.running:
+            return
+        mc = self.mouse_clicks
+        kp = self.key_presses
+        if mc != self._last_mc or kp != self._last_kp:
+            self._last_mc = mc
+            self._last_kp = kp
 
-        if new_bush != self._visual_bush_stage or new_flower != self._visual_flower_stage:
-            old_bush = self._visual_bush_stage
-            old_flower = self._visual_flower_stage
-            self._visual_bush_stage = new_bush
-            self._visual_flower_stage = new_flower
+            new_bush = get_bush_stage(kp)
+            new_flower = get_flower_stage(mc)
 
-            if not self._animating:
-                self._animate(old_bush, old_flower, new_bush, new_flower, 0)
-            else:
-                self._render_bush(new_bush, new_flower)
+            if new_bush != self._visual_bush_stage or new_flower != self._visual_flower_stage:
+                old_bush = self._visual_bush_stage
+                old_flower = self._visual_flower_stage
+                self._visual_bush_stage = new_bush
+                self._visual_flower_stage = new_flower
 
-        if self.expanded:
-            self._update_stats_text()
+                if not self._animating:
+                    self._animate(old_bush, old_flower, new_bush, new_flower, 0)
+                else:
+                    self._render_bush(new_bush, new_flower)
+
+            if self.expanded:
+                self._update_stats_text()
+        self.root.after(50, self._poll_updates)
 
     def _animate(self, old_bush, old_flower, new_bush, new_flower, frame):
         self._animating = True
@@ -638,23 +647,11 @@ class ClickTracker:
     def _mouse_callback(self, nCode, wParam, lParam):
         if nCode >= 0 and wParam in (WM_LBUTTONDOWN, WM_RBUTTONDOWN, WM_MBUTTONDOWN):
             self.mouse_clicks += 1
-            if not self._pending_update:
-                self._pending_update = True
-                try:
-                    self.root.event_generate("<<InputEvent>>", when="tail")
-                except Exception:
-                    pass
         return user32.CallNextHookEx(None, nCode, wParam, lParam)
 
     def _kb_callback(self, nCode, wParam, lParam):
         if nCode >= 0 and wParam in (WM_KEYDOWN, WM_SYSKEYDOWN):
             self.key_presses += 1
-            if not self._pending_update:
-                self._pending_update = True
-                try:
-                    self.root.event_generate("<<InputEvent>>", when="tail")
-                except Exception:
-                    pass
         return user32.CallNextHookEx(None, nCode, wParam, lParam)
 
     def _hook_thread(self, hook_type, proc):
