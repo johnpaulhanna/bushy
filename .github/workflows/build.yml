@@ -29,11 +29,11 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ClickTracker
-          path: dist/ClickTracker.exe
+          name: Bushy
+          path: dist/Bushy.exe
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/ClickTracker.exe
+          files: dist/Bushy.exe
           generate_release_notes: true
