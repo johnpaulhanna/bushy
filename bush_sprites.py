@@ -174,36 +174,43 @@ class SpriteManager:
             put_if_valid(color, cx, cy + 1)
             put_if_valid(center, cx, cy)
         elif flower_stage <= 8:
-            # High stages: diamond/star with bright center
-            center = "#fffff0"
+            # High stages: diamond/star with shading
+            dark = lerp_color(color, "#000000", 0.25)
+            light = lerp_color(color, "#ffffff", 0.3)
+            # Outer diagonals (darker)
+            put_if_valid(dark, cx - 1, cy - 1)
+            put_if_valid(dark, cx + 1, cy - 1)
+            put_if_valid(dark, cx - 1, cy + 1)
+            put_if_valid(dark, cx + 1, cy + 1)
+            # Cardinal petals (base color)
             put_if_valid(color, cx - 1, cy)
             put_if_valid(color, cx + 1, cy)
             put_if_valid(color, cx, cy - 1)
             put_if_valid(color, cx, cy + 1)
-            put_if_valid(color, cx - 1, cy - 1)
-            put_if_valid(color, cx + 1, cy - 1)
-            put_if_valid(color, cx - 1, cy + 1)
-            put_if_valid(color, cx + 1, cy + 1)
-            put_if_valid(center, cx, cy)
+            # Bright center
+            put_if_valid(light, cx, cy)
         else:
-            # Max stages: full bloom — 3x3 petals with bright center + outer accents
+            # Max stages: full bloom with shading — dark outer, mid inner, bright center
+            dark = lerp_color(color, "#000000", 0.35)
+            light = lerp_color(color, "#ffffff", 0.4)
             center = "#ffffff"
-            # Inner petals
+            # Outer tips (darkest)
+            put_if_valid(dark, cx - 2, cy)
+            put_if_valid(dark, cx + 2, cy)
+            put_if_valid(dark, cx, cy - 2)
+            put_if_valid(dark, cx, cy + 2)
+            # Diagonal petals (dark-mid)
+            put_if_valid(dark, cx - 1, cy - 1)
+            put_if_valid(dark, cx + 1, cy - 1)
+            put_if_valid(dark, cx - 1, cy + 1)
+            put_if_valid(dark, cx + 1, cy + 1)
+            # Cardinal petals (base color)
             put_if_valid(color, cx - 1, cy)
             put_if_valid(color, cx + 1, cy)
             put_if_valid(color, cx, cy - 1)
             put_if_valid(color, cx, cy + 1)
-            # Diagonal petals
-            put_if_valid(color, cx - 1, cy - 1)
-            put_if_valid(color, cx + 1, cy - 1)
-            put_if_valid(color, cx - 1, cy + 1)
-            put_if_valid(color, cx + 1, cy + 1)
-            # Outer tips
-            put_if_valid(color, cx - 2, cy)
-            put_if_valid(color, cx + 2, cy)
-            put_if_valid(color, cx, cy - 2)
-            put_if_valid(color, cx, cy + 2)
-            put_if_valid(center, cx, cy)
+            # Inner highlight ring + center
+            put_if_valid(light, cx, cy)
 
     def create_flowered_sprite(self, stage_index, flower_stage):
         """Create a scaled sprite with flowers overlaid."""
