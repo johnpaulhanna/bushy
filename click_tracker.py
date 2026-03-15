@@ -126,7 +126,7 @@ STATS_BG = "#1a3a10"
 STATS_INNER = "#243d18"
 TEXT_COLOR = "#e8f0d8"
 TEXT_DIM = "#8aaa6a"
-FONT_FAMILY = "Iosevka Charon Mono"
+FONT_FAMILY = "TikTok Sans"
 
 VINE_DARK = "#0e2a06"
 VINE_MED = "#1a4a0a"
@@ -145,7 +145,7 @@ STARTUP_REG_NAME = "ClickTracker"
 def _load_fonts():
     FR_PRIVATE = 0x10
     fonts_dir = resource_path("fonts")
-    for name in ["IosevkaCharonMono-Regular.ttf", "IosevkaCharonMono-Bold.ttf"]:
+    for name in ["TikTokSans-Regular.ttf", "TikTokSans-Bold.ttf"]:
         path = os.path.join(fonts_dir, name)
         if os.path.exists(path):
             gdi32.AddFontResourceExW(path, FR_PRIVATE, 0)
