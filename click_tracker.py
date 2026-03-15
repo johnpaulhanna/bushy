@@ -367,8 +367,6 @@ class ClickTracker:
         self._current_sprite_ref = None
         self._tray_icon = None
         self._visible = True
-        self._tooltip_win = None
-        self._hover_bright = False
         self._dpi_scale = _get_dpi_scale()
         self._ps = max(2, round(3 * self._dpi_scale / 4))  # border pixel size scales with DPI
 
@@ -426,8 +424,6 @@ class ClickTracker:
         self.bush_label.bind("<ButtonPress-1>", self._on_drag_start)
         self.bush_label.bind("<B1-Motion>", self._on_drag)
         self.bush_label.bind("<ButtonRelease-1>", self._on_click)
-        self.bush_label.bind("<Enter>", self._on_hover_enter)
-        self.bush_label.bind("<Leave>", self._on_hover_leave)
         self.root.bind("<Button-3>", self._on_right_click)
 
         self.menu = tk.Menu(self.root, tearoff=0, bg="#243d18", fg=TEXT_COLOR,
@@ -442,43 +438,6 @@ class ClickTracker:
         self._render_bush(self._visual_bush_stage, self._visual_flower_stage)
         self.root.protocol("WM_DELETE_WINDOW", self._quit)
         self._force_topmost()
-
-    # --- Tooltip ---
-    def _on_hover_enter(self, event):
-        self._hover_bright = True
-        # Show tooltip after short delay
-        self._tooltip_after = self.root.after(400, self._show_tooltip)
-
-    def _on_hover_leave(self, event):
-        self._hover_bright = False
-        if hasattr(self, '_tooltip_after'):
-            self.root.after_cancel(self._tooltip_after)
-        self._hide_tooltip()
-
-    def _show_tooltip(self):
-        if self._tooltip_win:
-            return
-        mc = format_count(self.mouse_clicks)
-        kp = format_count(self.key_presses)
-
-        self._tooltip_win = tw = tk.Toplevel(self.root)
-        tw.overrideredirect(True)
-        tw.attributes("-topmost", True)
-        tw.configure(bg="#1a3a10")
-
-        lbl = tk.Label(tw, text=f"Clicks: {mc}  |  Keys: {kp}",
-                       bg="#1a3a10", fg=TEXT_COLOR,
-                       font=(FONT_FAMILY, 8), padx=6, pady=2)
-        lbl.pack()
-
-        x = self.root.winfo_x() + self.root.winfo_width() // 2
-        y = self.root.winfo_y() - 24
-        tw.geometry(f"+{x}+{y}")
-
-    def _hide_tooltip(self):
-        if self._tooltip_win:
-            self._tooltip_win.destroy()
-            self._tooltip_win = None
 
     # --- Stats panel ---
     def _draw_stats_panel(self):
@@ -740,7 +699,6 @@ class ClickTracker:
         if self._visible:
             self.root.withdraw()
             self._hide_stats_popup()
-            self._hide_tooltip()
             self._visible = False
         else:
             self.root.deiconify()
@@ -828,7 +786,6 @@ class ClickTracker:
         self._save()
         save_settings(self.settings)
         self._hide_stats_popup()
-        self._hide_tooltip()
         if self._tray_icon:
             try:
                 self._tray_icon.stop()

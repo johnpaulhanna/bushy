@@ -5,13 +5,13 @@
 
 ## What is it?
 
-- bushy is a cool bush that runs in the background and tracks how many times youve clicked or typed something, it grows the more you do either
+- bushy is a cool bush that runs in the background and tracks how many times you've clicked or typed something, it grows the more you do either.
 
 ## Features
 
-- grows the more you type or click
-- has flowers on it the more you click
-- grows in size the more you type
+- grows the more you type or click.
+- has flowers on it the more you click.
+- grows in size the more you type.
 - clicking on it shows the total count for each type (clicks | keys)
 
 ## Download
