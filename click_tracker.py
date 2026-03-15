@@ -95,6 +95,8 @@ user32.CallNextHookEx.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_uint, 
 user32.CallNextHookEx.restype = ctypes.c_long
 user32.UnhookWindowsHookEx.argtypes = [ctypes.c_void_p]
 user32.PeekMessageW.argtypes = [ctypes.POINTER(wt.MSG), wt.HWND, ctypes.c_uint, ctypes.c_uint, ctypes.c_uint]
+user32.GetMessageW.argtypes = [ctypes.POINTER(wt.MSG), wt.HWND, ctypes.c_uint, ctypes.c_uint]
+user32.GetMessageW.restype = ctypes.c_int
 kernel32.GetModuleHandleW.argtypes = [wt.LPCWSTR]
 kernel32.GetModuleHandleW.restype = wt.HINSTANCE
 
@@ -109,6 +111,10 @@ user32.SetWindowPos.restype = wt.BOOL
 kernel32.CreateMutexW.argtypes = [ctypes.c_void_p, wt.BOOL, wt.LPCWSTR]
 kernel32.CreateMutexW.restype = wt.HANDLE
 kernel32.GetLastError.restype = wt.DWORD
+kernel32.GetCurrentThread.argtypes = []
+kernel32.GetCurrentThread.restype = wt.HANDLE
+kernel32.SetThreadPriority.argtypes = [wt.HANDLE, ctypes.c_int]
+kernel32.SetThreadPriority.restype = wt.BOOL
 
 SAVE_INTERVAL = 30
 BG_COLOR = "#010101"
@@ -655,19 +661,20 @@ class ClickTracker:
         return user32.CallNextHookEx(None, nCode, wParam, lParam)
 
     def _hook_thread(self, hook_type, proc):
+        # Set thread to high priority so hooks respond instantly
+        kernel32.SetThreadPriority(kernel32.GetCurrentThread(), 2)  # THREAD_PRIORITY_HIGHEST
         hook = user32.SetWindowsHookExW(hook_type, proc, kernel32.GetModuleHandleW(None), 0)
         if not hook:
             logger.error("Failed to install hook type %d", hook_type)
             return
         logger.info("Hook type %d installed", hook_type)
         msg = wt.MSG()
-        while self.running:
-            result = user32.PeekMessageW(ctypes.byref(msg), None, 0, 0, 1)
-            if result:
-                user32.TranslateMessage(ctypes.byref(msg))
-                user32.DispatchMessageW(ctypes.byref(msg))
-            else:
-                time.sleep(0.01)
+        # GetMessageW blocks efficiently until a message arrives — no sleep needed
+        while user32.GetMessageW(ctypes.byref(msg), None, 0, 0) > 0:
+            user32.TranslateMessage(ctypes.byref(msg))
+            user32.DispatchMessageW(ctypes.byref(msg))
+            if not self.running:
+                break
         user32.UnhookWindowsHookEx(hook)
         logger.info("Hook type %d removed", hook_type)
 
