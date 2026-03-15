@@ -124,11 +124,22 @@ class SpriteManager:
             scaled = sprite.zoom(self._scale)
             self._sprites.append(scaled)
 
-            # Select flower positions — pick ~15% of foliage, well spread
+            # Select flower positions — spaced apart so multi-pixel flowers don't overlap
             rng = random.Random(42 + idx)
             rng.shuffle(flower_positions)
-            count = max(3, len(flower_positions) // 7)
-            self._flower_maps.append(flower_positions[:count])
+            selected = []
+            for pos in flower_positions:
+                # Ensure minimum 4px distance from other flowers
+                too_close = False
+                for sx, sy in selected:
+                    if abs(pos[0] - sx) < 4 and abs(pos[1] - sy) < 4:
+                        too_close = True
+                        break
+                if not too_close:
+                    selected.append(pos)
+                if len(selected) >= max(3, len(flower_positions) // 10):
+                    break
+            self._flower_maps.append(selected)
 
     def get_sprite(self, stage_index):
         return self._sprites[stage_index]
@@ -139,6 +150,60 @@ class SpriteManager:
     def get_sprite_size(self, stage_index):
         s = self._sprites[stage_index]
         return s.width(), s.height()
+
+    def _draw_flower(self, img, cx, cy, color, flower_stage, w, h):
+        """Draw a flower shape centered at (cx, cy) in raw pixel coords."""
+        # Clamp helper
+        def put_if_valid(c, x, y):
+            if 0 <= x < w and 0 <= y < h:
+                img.put(c, to=(x, y))
+
+        if flower_stage <= 2:
+            # Early stages: small '+' cross (3px)
+            put_if_valid(color, cx, cy)
+            put_if_valid(color, cx - 1, cy)
+            put_if_valid(color, cx + 1, cy)
+            put_if_valid(color, cx, cy - 1)
+            put_if_valid(color, cx, cy + 1)
+        elif flower_stage <= 5:
+            # Mid stages: '+' cross with contrasting center
+            center = "#ffffa0" if flower_stage < 5 else "#ffe040"
+            put_if_valid(color, cx - 1, cy)
+            put_if_valid(color, cx + 1, cy)
+            put_if_valid(color, cx, cy - 1)
+            put_if_valid(color, cx, cy + 1)
+            put_if_valid(center, cx, cy)
+        elif flower_stage <= 8:
+            # High stages: diamond/star with bright center
+            center = "#fffff0"
+            put_if_valid(color, cx - 1, cy)
+            put_if_valid(color, cx + 1, cy)
+            put_if_valid(color, cx, cy - 1)
+            put_if_valid(color, cx, cy + 1)
+            put_if_valid(color, cx - 1, cy - 1)
+            put_if_valid(color, cx + 1, cy - 1)
+            put_if_valid(color, cx - 1, cy + 1)
+            put_if_valid(color, cx + 1, cy + 1)
+            put_if_valid(center, cx, cy)
+        else:
+            # Max stages: full bloom — 3x3 petals with bright center + outer accents
+            center = "#ffffff"
+            # Inner petals
+            put_if_valid(color, cx - 1, cy)
+            put_if_valid(color, cx + 1, cy)
+            put_if_valid(color, cx, cy - 1)
+            put_if_valid(color, cx, cy + 1)
+            # Diagonal petals
+            put_if_valid(color, cx - 1, cy - 1)
+            put_if_valid(color, cx + 1, cy - 1)
+            put_if_valid(color, cx - 1, cy + 1)
+            put_if_valid(color, cx + 1, cy + 1)
+            # Outer tips
+            put_if_valid(color, cx - 2, cy)
+            put_if_valid(color, cx + 2, cy)
+            put_if_valid(color, cx, cy - 2)
+            put_if_valid(color, cx, cy + 2)
+            put_if_valid(center, cx, cy)
 
     def create_flowered_sprite(self, stage_index, flower_stage):
         """Create a scaled sprite with flowers overlaid."""
@@ -151,7 +216,7 @@ class SpriteManager:
             if color:
                 positions = self._flower_maps[stage_index]
                 for x, y in positions:
-                    result.put(color, to=(x, y))
+                    self._draw_flower(result, x, y, color, flower_stage, rw, rh)
 
         return result.zoom(self._scale)
 
@@ -172,10 +237,12 @@ class SpriteManager:
             blended = lerp_color(old_color, new_color, t)
 
             raw = self._raw_sprites[new_bush]
+            rw, rh = self._raw_sizes[new_bush]
             result = raw.copy()
 
+            target_stage = max(new_flower, old_flower)
             positions = self._flower_maps[new_bush]
             for x, y in positions:
-                result.put(blended, to=(x, y))
+                self._draw_flower(result, x, y, blended, target_stage, rw, rh)
 
             return result.zoom(self._scale)
