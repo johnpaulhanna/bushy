@@ -52,6 +52,7 @@ FLOWER_COLORS = [
 ]
 
 GROUND_FLOWER_COLORS = ["#f06080", "#f0a040", "#e0e060", "#a0d0f0", "#f0f0f0"]
+LEAF_GREEN = "#4a9c2a"
 
 
 def get_bush_stage(key_presses):
@@ -137,8 +138,8 @@ class SpriteManager:
                         break
                 if not too_close:
                     selected.append(pos)
-                if len(selected) >= max(3, len(flower_positions) // 10):
-                    break
+                    if len(selected) >= max(3, len(flower_positions) // 10):
+                        break
             self._flower_maps.append(selected)
 
     def get_sprite(self, stage_index):
@@ -153,79 +154,55 @@ class SpriteManager:
 
     def _draw_flower(self, img, cx, cy, color, flower_stage, w, h):
         """Draw a flower shape centered at (cx, cy) in raw pixel coords."""
-        # Clamp helper
-        def put_if_valid(c, x, y):
+        CARDINAL = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+        DIAGONAL = [(-1, -1), (1, -1), (-1, 1), (1, 1)]
+        TIPS = [(-2, 0), (2, 0), (0, -2), (0, 2)]
+
+        def put(c, x, y):
             if 0 <= x < w and 0 <= y < h:
                 img.put(c, to=(x, y))
 
+        def put_offsets(c, offsets):
+            for dx, dy in offsets:
+                put(c, cx + dx, cy + dy)
+
         if flower_stage <= 2:
-            # Early stages: small '+' cross (3px)
-            put_if_valid(color, cx, cy)
-            put_if_valid(color, cx - 1, cy)
-            put_if_valid(color, cx + 1, cy)
-            put_if_valid(color, cx, cy - 1)
-            put_if_valid(color, cx, cy + 1)
+            put(color, cx, cy)
+            put_offsets(color, CARDINAL)
         elif flower_stage <= 5:
-            # Mid stages: '+' cross with contrasting center
             center = "#ffffa0" if flower_stage < 5 else "#ffe040"
-            put_if_valid(color, cx - 1, cy)
-            put_if_valid(color, cx + 1, cy)
-            put_if_valid(color, cx, cy - 1)
-            put_if_valid(color, cx, cy + 1)
-            put_if_valid(center, cx, cy)
+            put_offsets(color, CARDINAL)
+            put(center, cx, cy)
         elif flower_stage <= 8:
-            # High stages: diamond/star with shading
             dark = lerp_color(color, "#000000", 0.25)
             light = lerp_color(color, "#ffffff", 0.3)
-            # Outer diagonals (darker)
-            put_if_valid(dark, cx - 1, cy - 1)
-            put_if_valid(dark, cx + 1, cy - 1)
-            put_if_valid(dark, cx - 1, cy + 1)
-            put_if_valid(dark, cx + 1, cy + 1)
-            # Cardinal petals (base color)
-            put_if_valid(color, cx - 1, cy)
-            put_if_valid(color, cx + 1, cy)
-            put_if_valid(color, cx, cy - 1)
-            put_if_valid(color, cx, cy + 1)
-            # Bright center
-            put_if_valid(light, cx, cy)
+            put_offsets(dark, DIAGONAL)
+            put_offsets(color, CARDINAL)
+            put(light, cx, cy)
         else:
-            # Max stages: full bloom with shading — dark outer, mid inner, bright center
             dark = lerp_color(color, "#000000", 0.35)
             light = lerp_color(color, "#ffffff", 0.4)
-            center = "#ffffff"
-            # Outer tips (darkest)
-            put_if_valid(dark, cx - 2, cy)
-            put_if_valid(dark, cx + 2, cy)
-            put_if_valid(dark, cx, cy - 2)
-            put_if_valid(dark, cx, cy + 2)
-            # Diagonal petals (dark-mid)
-            put_if_valid(dark, cx - 1, cy - 1)
-            put_if_valid(dark, cx + 1, cy - 1)
-            put_if_valid(dark, cx - 1, cy + 1)
-            put_if_valid(dark, cx + 1, cy + 1)
-            # Cardinal petals (base color)
-            put_if_valid(color, cx - 1, cy)
-            put_if_valid(color, cx + 1, cy)
-            put_if_valid(color, cx, cy - 1)
-            put_if_valid(color, cx, cy + 1)
-            # Inner highlight ring + center
-            put_if_valid(light, cx, cy)
+            put_offsets(dark, TIPS)
+            put_offsets(dark, DIAGONAL)
+            put_offsets(color, CARDINAL)
+            put(light, cx, cy)
 
-    def create_flowered_sprite(self, stage_index, flower_stage):
-        """Create a scaled sprite with flowers overlaid."""
+    def _apply_flowers(self, stage_index, color, flower_stage):
+        """Copy raw sprite, overlay flowers, and return scaled result."""
         raw = self._raw_sprites[stage_index]
         rw, rh = self._raw_sizes[stage_index]
         result = raw.copy()
-
-        if flower_stage > 0 and flower_stage < len(FLOWER_COLORS):
-            color = FLOWER_COLORS[flower_stage]
-            if color:
-                positions = self._flower_maps[stage_index]
-                for x, y in positions:
-                    self._draw_flower(result, x, y, color, flower_stage, rw, rh)
-
+        if color:
+            for x, y in self._flower_maps[stage_index]:
+                self._draw_flower(result, x, y, color, flower_stage, rw, rh)
         return result.zoom(self._scale)
+
+    def create_flowered_sprite(self, stage_index, flower_stage):
+        """Create a scaled sprite with flowers overlaid."""
+        color = None
+        if 0 < flower_stage < len(FLOWER_COLORS):
+            color = FLOWER_COLORS[flower_stage]
+        return self._apply_flowers(stage_index, color, flower_stage)
 
     def create_animated_frame(self, old_bush, old_flower, new_bush, new_flower, t):
         """Create an interpolated frame between two states."""
@@ -234,22 +211,8 @@ class SpriteManager:
                 return self.create_flowered_sprite(old_bush, old_flower)
             else:
                 return self.create_flowered_sprite(new_bush, new_flower)
-        else:
-            if old_flower == 0:
-                old_color = "#4a9c2a"
-            else:
-                old_color = FLOWER_COLORS[old_flower]
-            new_color = FLOWER_COLORS[new_flower] if new_flower > 0 else "#4a9c2a"
 
-            blended = lerp_color(old_color, new_color, t)
-
-            raw = self._raw_sprites[new_bush]
-            rw, rh = self._raw_sizes[new_bush]
-            result = raw.copy()
-
-            target_stage = max(new_flower, old_flower)
-            positions = self._flower_maps[new_bush]
-            for x, y in positions:
-                self._draw_flower(result, x, y, blended, target_stage, rw, rh)
-
-            return result.zoom(self._scale)
+        old_color = FLOWER_COLORS[old_flower] if old_flower > 0 else LEAF_GREEN
+        new_color = FLOWER_COLORS[new_flower] if new_flower > 0 else LEAF_GREEN
+        blended = lerp_color(old_color, new_color, t)
+        return self._apply_flowers(new_bush, blended, max(new_flower, old_flower))

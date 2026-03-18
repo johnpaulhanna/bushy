@@ -94,7 +94,6 @@ user32.SetWindowsHookExW.restype = ctypes.c_void_p
 user32.CallNextHookEx.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_uint, ctypes.c_void_p]
 user32.CallNextHookEx.restype = ctypes.c_long
 user32.UnhookWindowsHookEx.argtypes = [ctypes.c_void_p]
-user32.PeekMessageW.argtypes = [ctypes.POINTER(wt.MSG), wt.HWND, ctypes.c_uint, ctypes.c_uint, ctypes.c_uint]
 user32.GetMessageW.argtypes = [ctypes.POINTER(wt.MSG), wt.HWND, ctypes.c_uint, ctypes.c_uint]
 user32.GetMessageW.restype = ctypes.c_int
 kernel32.GetModuleHandleW.argtypes = [wt.LPCWSTR]
@@ -116,6 +115,7 @@ kernel32.GetCurrentThread.restype = wt.HANDLE
 kernel32.SetThreadPriority.argtypes = [wt.HANDLE, ctypes.c_int]
 kernel32.SetThreadPriority.restype = wt.BOOL
 
+THREAD_PRIORITY_HIGHEST = 2
 SAVE_INTERVAL = 30
 BG_COLOR = "#010101"
 ANIM_FRAMES = 15
@@ -662,7 +662,7 @@ class ClickTracker:
 
     def _hook_thread(self, hook_type, proc):
         # Set thread to high priority so hooks respond instantly
-        kernel32.SetThreadPriority(kernel32.GetCurrentThread(), 2)  # THREAD_PRIORITY_HIGHEST
+        kernel32.SetThreadPriority(kernel32.GetCurrentThread(), THREAD_PRIORITY_HIGHEST)
         hook = user32.SetWindowsHookExW(hook_type, proc, kernel32.GetModuleHandleW(None), 0)
         if not hook:
             logger.error("Failed to install hook type %d", hook_type)
